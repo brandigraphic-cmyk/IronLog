@@ -71,6 +71,13 @@ input,select,textarea{-webkit-user-select:text;user-select:text}
 .grip svg{width:22px;height:22px}
 .set.drag{position:relative;z-index:5;background:var(--card);box-shadow:0 8px 24px rgba(0,0,0,.28);border-radius:10px}
 .set[data-a=fedit]{cursor:pointer}
+.wheel.R{text-align:right;padding-right:2px}.wheel.L{text-align:left;padding-left:2px}
+.swr{position:relative;overflow:hidden}
+.swr>.set{position:relative;background:var(--card);touch-action:pan-y;transition:transform .2s}
+.swr>.set.mv{transition:none}
+.swd{position:absolute;top:0;right:0;bottom:0;width:88px;display:flex}
+.swd button{flex:1;border-radius:0;background:var(--bad) !important;color:#fff}
+.swr.drag{overflow:visible;z-index:5;background:var(--card);box-shadow:0 8px 24px rgba(0,0,0,.28);border-radius:10px}
 </style></head><body>
 <main id="app"></main>
 <nav id="nav"></nav>
@@ -146,18 +153,19 @@ ${tmsg?`<div class="tip good">${tmsg}</div>`:''}
 ${rest>0?`<div class="mute">Rest timer: <b class="num" id="rest" style="font-size:22px">${rest}s</b></div>`:''}</div>
 ${list}`}
 function vSplit(){const sp=S.cfg.split||[];
+const ovT=TE?`<div class="ov" data-a="tclose"><div class="sheet" data-a="noop"><div class="row sp" style="margin-bottom:10px"><b>Target</b><span class="mute">sets × reps</span></div>${tgtW()}<div class="grid2" style="margin-top:12px"><button class="ghost" data-a="tclose">Cancel</button><button data-a="tdone">Done</button></div></div></div>`:'';
 const gripSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>';
 return hero('#13A35B,#2FB6FF','Split',`<div style="opacity:.9">Add a day, then add exercises with a target such as 4×6-8.</div><div class="row" style="gap:24px;margin-top:10px">${tile(sp.length,'training days')}${tile(sp.reduce((a,d)=>a+d.ex.length,0),'exercises')}</div>`)+`
 ${sp.map((d,ix)=>`<div class="card" style="border-left:5px solid ${PAL[ix%7]}"><div class="row"><input data-a="dname" data-id="${d.id}" value="${d.name}"><button class="ghost sm" data-a="delday" data-v="${d.id}">Remove day</button></div>
-${d.ex.length>1?'<div class="mute" style="margin-top:8px;font-size:13px">Hold the handle and drag to reorder</div>':''}
-<div class="xl" data-day="${d.id}">${d.ex.map((x,i)=>`<div class="set" data-i="${i}"><div class="row" style="gap:10px;min-width:0"><span class="grip">${gripSvg}</span><span style="border-left:4px solid ${GC[GRP[x.n]]||'var(--line)'};padding-left:8px">${x.n}</span></div><div class="row"><input data-a="dtgt" data-id="${d.id}" data-i="${i}" value="${x.t}" style="width:96px;padding:8px"><button class="ghost sm" data-a="delex" data-v="${d.id}:${i}">Remove</button></div></div>`).join('')}</div>
+${d.ex.length?'<div class="mute" style="margin-top:8px;font-size:13px">Hold the handle to reorder. Swipe left to delete. Tap the target to change it.</div>':''}
+<div class="xl" data-day="${d.id}">${d.ex.map((x,i)=>`<div class="swr" data-i="${i}"><div class="swd"><button data-a="delex" data-v="${d.id}:${i}">Delete</button></div><div class="set"><div class="row" style="gap:10px;min-width:0"><span class="grip">${gripSvg}</span><span style="border-left:4px solid ${GC[GRP[x.n]]||'var(--line)'};padding-left:8px">${x.n}</span></div><button class="ghost sm" data-a="tgt" data-v="${d.id}:${i}">${x.t}</button></div></div>`).join('')}</div>
 ${d.ex.length?'':'<p class="mute">No exercises yet.</p>'}
-<div class="row" style="margin-top:10px"><select id="ad-${d.id}" style="flex:1">${opts('')}</select><input id="at-${d.id}" value="3×10" style="width:96px"><button class="sm" data-a="addex" data-v="${d.id}">Add</button></div></div>`).join('')}
+<div class="row" style="margin-top:10px"><select id="ad-${d.id}" style="flex:1">${opts('')}</select><button class="ghost" data-a="tgt" data-v="${d.id}:new">${ATG[d.id]||'3×10'}</button><button class="sm" data-a="addex" data-v="${d.id}">Add</button></div></div>`).join('')}
 <button class="full" data-a="addday">Add a day</button>
 <button class="full ghost" style="margin-top:8px" data-a="tmpl">Add Push / Pull / Legs template</button>
 <h2>Your own exercise</h2><div class="card"><div class="grid2"><div><label>Name</label><input id="nx"></div><div><label>Muscle group</label><select id="ng">${Object.keys(EX).map(g=>`<option>${g}</option>`).join('')}</select></div></div><button class="full" style="margin-top:10px" data-a="newex">Add to exercise list</button></div>
 <div class="card"><b>Rules of thumb</b><div class="mute">· 10–20 hard sets per muscle group each week<br>· Train each muscle about twice a week<br>· Stop 1–3 reps short of failure<br>· Rest 2–3 min on heavy compounds, 60–90 s on isolation<br>· Add weight (2.5 kg) once you reach the top of your rep range<br>· Sleep 7+ hours and eat enough protein</div></div>
-<h2>Share my split</h2><div class="card"><div class="mute" style="margin-bottom:10px">Creates a file with your split. Send it to a friend on WhatsApp or anywhere else. They open it with Import split in their Iron Log.</div><button class="full" data-a="shsplit">Share my split</button><div class="grid2" style="margin-top:8px"><button class="ghost" data-a="shtext">Send as text</button><button class="ghost" data-a="isplit">Import split</button></div></div>`}
+<h2>Share my split</h2><div class="card"><div class="mute" style="margin-bottom:10px">Creates a file with your split. Send it to a friend on WhatsApp or anywhere else. They open it with Import split in their Iron Log.</div><button class="full" data-a="shsplit">Share my split</button><div class="grid2" style="margin-top:8px"><button class="ghost" data-a="shtext">Send as text</button><button class="ghost" data-a="isplit">Import split</button></div></div>${ovT}`}
 function vStats(){const w=allSets().filter(t=>t.date>=wk),g={};Object.keys(EX).forEach(k=>g[k]=0);w.forEach(t=>g[GRP[t.ex]]++);
 const wv=w.reduce((a,t)=>a+t.w*t.r,0),wc=S.sessions.filter(x=>x.date>=wk).length;
 const pts=Object.entries(allSets().filter(t=>t.ex===statEx).reduce((m,t)=>{m[t.date]=Math.max(m[t.date]||0,e1(t.w,t.r));return m},{})).sort();
@@ -167,13 +175,13 @@ return hero('#FF7A2F,#C22A8F','Stats',`<div style="opacity:.9">This week</div><d
 ${low.length?`<div class="tip warn">Under 10 sets this week: ${low.join(', ')}.</div>`:''}</div>
 <h2>Lift progress</h2><div class="card" style="border-top:5px solid ${GC[GRP[statEx]]||'var(--acc)'}"><select data-a="statex">${opts(statEx)}</select><div class="mute" style="margin:8px 0">Estimated 1RM per session (kg)</div>${line(pts.map(p=>[p[0],p[1]]),v=>Math.round(v),GC[GRP[statEx]])}</div>
 <h2>Cardio</h2>${vCardio()}`}
-function vCardio(){const c=S.cardio.filter(x=>x.date>=wk),m=c.reduce((a,x)=>a+x.min,0),R=2*Math.PI*40;
+function vCardio(){if(!WV.cc)WV.cc={cm:29,ci:0,cd:0};const c=S.cardio.filter(x=>x.date>=wk),m=c.reduce((a,x)=>a+x.min,0),R=2*Math.PI*40;
 return`<div class="card" style="border-top:5px solid #4FE0E0"><div class="row" style="gap:16px"><svg viewBox="0 0 100 100" style="width:96px;flex:none"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg)" stroke-width="10"/><circle cx="50" cy="50" r="40" fill="none" stroke="#4FE0E0" stroke-width="10" stroke-linecap="round" stroke-dasharray="${R}" stroke-dashoffset="${R*(1-Math.min(1,m/150))}" transform="rotate(-90 50 50)"/><text x="50" y="58" text-anchor="middle" font-size="26" font-weight="700" font-family="Barlow Condensed,sans-serif" fill="var(--ink)">${m}</text></svg><div><b>${m} of 150 min</b><div class="mute">Cardio this week</div></div></div>
-<div class="grid2" style="margin-top:12px"><div><label>Type</label><select id="ct">${['Run','Walk','Cycle','Row','Swim','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Minutes</label><input id="cm" type="number" inputmode="decimal"></div><div><label>Distance (km, optional)</label><input id="ck" type="number" inputmode="decimal" step="0.1"></div><div style="align-self:end"><button class="full" data-a="cardio">Log cardio</button></div></div>
+<div style="margin-top:12px"><label>Type</label><select id="ct">${['Run','Walk','Cycle','Row','Swim','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div><div style="margin-top:10px">${cardioW('cc')}</div><button class="full" style="margin-top:12px" data-a="cardio">Log cardio</button>
 ${S.cardio.slice(-5).reverse().map(x=>`<div class="set"><span>${x.type} · ${x.min} min${x.km?` · ${x.km} km · ${(x.min/x.km).toFixed(1)} min/km`:''}</span><span class="mute">${x.date.slice(5)}</span></div>`).join('')}</div>`}
-function vBody(){const b=[...S.body].sort((a,c)=>a.date.localeCompare(c.date)),l=b[b.length-1],f=b[0],d=l?l.kg-f.kg:0;
+function vBody(){seedBody('bw');const b=[...S.body].sort((a,c)=>a.date.localeCompare(c.date)),l=b[b.length-1],f=b[0],d=l?l.kg-f.kg:0;
 return hero('#C22A8F,#5B2BE0','Body',l?`<div class="row sp" style="margin-top:8px"><div class="stat" style="font-size:56px">${l.kg} kg</div><div style="text-align:right">${tile((d>0?'+':'')+d.toFixed(1),'kg since '+f.date)}</div></div>`:`<div style="opacity:.9">Log your weight to start the trend.</div>`)+`
-<div class="card"><div class="row"><input id="bw" type="number" inputmode="decimal" step="0.1" placeholder="Body weight (kg)"><button data-a="body">Log</button></div>${line(b.slice(-30).map(x=>[x.date,x.kg]),v=>v.toFixed(1),'#C22A8F')}</div>`}
+<div class="card">${bodyW('bw')}<button class="full" style="margin:12px 0" data-a="body">Log weight</button>${line(b.slice(-30).map(x=>[x.date,x.kg]),v=>v.toFixed(1),'#C22A8F')}</div>`}
 function vMe(){const k=stats(),sp=S.cfg.split||[],goal=sp.length||3,wc=S.sessions.filter(s=>s.date>=wk).length,td=iso();
 const ts=today(),tsets=ts?ts.sets:[],tvol=tsets.reduce((a,t)=>a+t.w*t.r,0),tcm=S.cardio.filter(c=>c.date===td).reduce((a,c)=>a+c.min,0);
 const txp=tsets.length*10+tsets.filter(t=>t.pr).length*50+(ts?25:0)+tcm*2,done=tsets.length>0||tcm>0;
@@ -203,13 +211,13 @@ ${nx?`<h2>Next badge</h2><div class="card"><div class="row sp"><b>${nx.n}</b><sp
 <div class="mute" style="margin-top:8px">${syncMsg||(S.cfg.last?'Last sync: '+new Date(S.cfg.last).toLocaleString():'Not synced yet')}</div>
 <div class="grid2" style="margin-top:10px"><button class="ghost" data-a="exp">Export file</button><button class="ghost" data-a="imp">Import file</button></div></div>`}
 let mDate=iso(),mSec='workout',mEx='Bench Press';
-function vManual(){if(!WV.m)WV.m={ex:'',...toIdx(20,8)};const b=S.cfg.base||{},sess=S.sessions.find(x=>x.date===mDate),L=sess?sess.sets:[];
+function vManual(){if(!WV.m)WV.m={ex:'',...toIdx(20,8)};seedBody('mb');if(!WV.mc)WV.mc={cm:29,ci:0,cd:0};const b=S.cfg.base||{},sess=S.sessions.find(x=>x.date===mDate),L=sess?sess.sets:[];
 const secs=[['workout','Workout'],['body','Body'],['cardio','Cardio'],['life','History']];
 const dt=`<label>Date</label><input id="md" type="date" data-a="mdate" value="${mDate}" max="${iso()}">`;let h='';
 if(mSec==='workout')h=`<div class="card" style="border-top:5px solid #2FB6FF">${dt}<label style="margin-top:10px">Exercise</label><select id="mx" data-a="mxsel">${opts(mEx)}</select><div style="margin-top:10px">${wheelsHTML('m')}</div><label style="margin-top:10px">Number of sets (same weight and reps)</label><input id="mn" type="number" inputmode="numeric" value="3"><button class="full" style="margin-top:12px" data-a="madd">Add to ${mDate}</button></div>
 ${L.length?`<div class="card"><b>Logged on ${mDate}</b>${L.map(t=>`<div class="set"><span>${t.ex}: ${t.w} kg × ${t.r}</span><button class="ghost sm" data-a="mdel" data-v="${t.id}">Delete</button></div>`).join('')}</div>`:''}`;
-if(mSec==='body')h=`<div class="card" style="border-top:5px solid #C22A8F">${dt}<label style="margin-top:10px">Body weight (kg)</label><input id="mk" type="number" inputmode="decimal" step="0.1"><button class="full" style="margin-top:12px" data-a="mbody">Save weigh-in</button></div><div class="card"><b>Recent weigh-ins</b>${[...S.body].sort((a,c)=>c.date.localeCompare(a.date)).slice(0,8).map(x=>`<div class="set"><span>${x.date}: ${x.kg} kg</span><button class="ghost sm" data-a="mbdel" data-v="${x.id}">Delete</button></div>`).join('')||'<p class="mute">Nothing yet.</p>'}</div>`;
-if(mSec==='cardio')h=`<div class="card" style="border-top:5px solid #4FE0E0">${dt}<div class="grid2" style="margin-top:10px"><div><label>Type</label><select id="mt">${['Run','Walk','Cycle','Row','Swim','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div><div><label>Minutes</label><input id="mm" type="number" inputmode="decimal"></div></div><label style="margin-top:10px">Distance (km, optional)</label><input id="mkm" type="number" inputmode="decimal" step="0.1"><button class="full" style="margin-top:12px" data-a="mcard">Save cardio</button></div><div class="card"><b>Recent cardio</b>${[...S.cardio].sort((a,c)=>c.date.localeCompare(a.date)).slice(0,8).map(x=>`<div class="set"><span>${x.date}: ${x.type}, ${x.min} min</span><button class="ghost sm" data-a="mcdel" data-v="${x.id}">Delete</button></div>`).join('')||'<p class="mute">Nothing yet.</p>'}</div>`;
+if(mSec==='body')h=`<div class="card" style="border-top:5px solid #C22A8F">${dt}<div style="margin-top:10px">${bodyW('mb')}</div><button class="full" style="margin-top:12px" data-a="mbody">Save weigh-in</button></div><div class="card"><b>Recent weigh-ins</b>${[...S.body].sort((a,c)=>c.date.localeCompare(a.date)).slice(0,8).map(x=>`<div class="set"><span>${x.date}: ${x.kg} kg</span><button class="ghost sm" data-a="mbdel" data-v="${x.id}">Delete</button></div>`).join('')||'<p class="mute">Nothing yet.</p>'}</div>`;
+if(mSec==='cardio')h=`<div class="card" style="border-top:5px solid #4FE0E0">${dt}<div style="margin-top:10px"><label>Type</label><select id="mt">${['Run','Walk','Cycle','Row','Swim','Other'].map(x=>`<option>${x}</option>`).join('')}</select></div><div style="margin-top:10px">${cardioW('mc')}</div><button class="full" style="margin-top:12px" data-a="mcard">Save cardio</button></div><div class="card"><b>Recent cardio</b>${[...S.cardio].sort((a,c)=>c.date.localeCompare(a.date)).slice(0,8).map(x=>`<div class="set"><span>${x.date}: ${x.type}, ${x.min} min</span><button class="ghost sm" data-a="mcdel" data-v="${x.id}">Delete</button></div>`).join('')||'<p class="mute">Nothing yet.</p>'}</div>`;
 if(mSec==='life')h=`<div class="card" style="border-top:5px solid #FFB020"><b>Your training history</b><p class="mute" style="margin-top:4px">Already trained for years? Add totals here so your level, badges and rewards start where you really are. This does not touch your logged workouts.</p>
 <div class="grid2"><div><label>Years training</label><input id="ey" type="number" inputmode="decimal" value="3"></div><div><label>Workouts per week</label><input id="ew" type="number" inputmode="decimal" value="4"></div></div><button class="full ghost" style="margin-top:10px" data-a="lest">Estimate the totals for me</button>
 <div class="grid2" style="margin-top:14px"><div><label>Total workouts</label><input id="lw" type="number" inputmode="numeric" value="${b.workouts||''}"></div><div><label>Total sets</label><input id="ls" type="number" inputmode="numeric" value="${b.sets||''}"></div><div><label>Total volume (kg)</label><input id="lv" type="number" inputmode="numeric" value="${b.vol||''}"></div><div><label>Personal records</label><input id="lp" type="number" inputmode="numeric" value="${b.prs||''}"></div></div>
@@ -256,9 +264,35 @@ return{n,t:clean(x.t||'3×10').slice(0,12)||'3×10'}}).filter(Boolean);
 S.cfg.split.push({id:uid(),name:clean(d.name||'Day').slice(0,30)||'Day',ex});nd++});
 if(!S.cfg.plan&&S.cfg.split[0])S.cfg.plan=S.cfg.split[0].id;sv();toast('Added '+nd+' day'+(nd>1?'s':'')+' from the shared split')}
 function pickSplitFile(){const i=document.createElement('input');i.type='file';i.accept='.json,application/json';i.onchange=async()=>{try{const J=JSON.parse(await i.files[0].text());if(!J||J.type!=='ironlog-split')return toast('That is not a split file');importSplit(J);render()}catch(x){toast('Invalid file')}};i.click()}
+/* ---- generic wheels, target, body, cardio ---- */
+const N=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i),TEN=N(0,9).map(i=>'.'+i);
+function wgen(k,groups){const col=(c,items,cls)=>`<div class="wheel ${cls||''}" data-wk="${k}" data-wc="${c}">${items.map(x=>`<div>${x}</div>`).join('')}</div>`;
+return `<div class="wgrid" style="grid-template-columns:${groups.map(g=>g.fr||'1fr').join(' ')}">${groups.map(g=>`<div><label>${g.lab}</label><div class="wg">${g.cols.map(c=>col(c[0],c[1],c[2])).join('')}</div></div>`).join('')}</div>`}
+const parseT=t=>{const m=/(\d+)\s*[×x]\s*(\d+)(?:\s*[-–]\s*(\d+))?/.exec(t||'');return m?{s:+m[1],lo:+m[2],hi:+m[3]||0}:{s:3,lo:10,hi:0}};
+const fmtT=v=>`${v.ts+1}×${v.tl+1}${v.th>v.tl+1?'-'+v.th:''}`;
+const seedT=t=>{const p=parseT(t);WV.tg={ts:Math.max(0,Math.min(9,p.s-1)),tl:Math.max(0,Math.min(49,p.lo-1)),th:Math.max(0,Math.min(50,p.hi))}};
+const tgtW=()=>wgen('tg',[{lab:'Sets',cols:[['ts',N(1,10)]]},{lab:'Reps from',cols:[['tl',N(1,50)]]},{lab:'To (optional)',cols:[['th',['–',...N(1,50)]]]}]);
+const bodyW=k=>wgen(k,[{lab:'Body weight (kg)',cols:[['bi',N(0,300),'R'],['bd',TEN,'L']]}]);
+const cardioW=k=>wgen(k,[{lab:'Minutes',fr:'1fr',cols:[['cm',N(1,300)]]},{lab:'Distance (km, optional)',fr:'2fr',cols:[['ci',N(0,100),'R'],['cd',TEN,'L']]}]);
+const seedBody=k=>{if(WV[k])return;const l=[...S.body].sort((a,c)=>c.date.localeCompare(a.date))[0],q=Math.round((l?l.kg:70)*10);WV[k]={bi:Math.min(300,Math.floor(q/10)),bd:q%10}};
+const bwVal=k=>WV[k].bi+WV[k].bd/10,cardioKm=k=>WV[k].ci+WV[k].cd/10;
+let TE=null,swiped=0;const ATG={};
+/* ---- swipe left to delete ---- */
+let SWP=null,swOpen=null;
+const swClose=()=>{if(swOpen){swOpen.style.transform='';swOpen=null}};
+document.addEventListener('pointerdown',e=>{const c=e.target.closest&&e.target.closest('.swr>.set');
+if(swOpen&&c!==swOpen&&!e.target.closest('.swd'))swClose();
+if(!c||e.target.closest('.grip'))return;SWP={c,x0:e.clientX,y0:e.clientY,base:swOpen===c?-88:0,mode:0,id:e.pointerId,x:swOpen===c?-88:0}});
+document.addEventListener('pointermove',e=>{if(!SWP)return;const dx=e.clientX-SWP.x0,dy=e.clientY-SWP.y0;
+if(!SWP.mode){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;if(Math.abs(dy)>Math.abs(dx)){SWP=null;return}SWP.mode=1;SWP.c.classList.add('mv');try{SWP.c.setPointerCapture(SWP.id)}catch(_){}}
+const x=Math.max(-SWP.c.offsetWidth,Math.min(0,SWP.base+dx));SWP.c.style.transform='translateX('+x+'px)';SWP.x=x});
+const swEnd=()=>{if(!SWP)return;const{c,mode,x}=SWP;SWP=null;if(!mode){if(swOpen===c)swClose();return}c.classList.remove('mv');
+if(x<-c.offsetWidth*.65){const b=c.parentElement.querySelector('.swd button');swiped=0;if(b)b.click();swiped=Date.now();return}
+swiped=Date.now();if(x<-44){c.style.transform='translateX(-88px)';swOpen=c}else{c.style.transform='';if(swOpen===c)swOpen=null}};
+document.addEventListener('pointerup',swEnd);document.addEventListener('pointercancel',swEnd);
 /* ---- drag to reorder exercises ---- */
 let DR=null;
-document.addEventListener('pointerdown',e=>{const g=e.target.closest&&e.target.closest('.grip');if(!g)return;const row=g.closest('.set');if(!row)return;e.preventDefault();DR={row,list:row.parentElement,y0:e.clientY,t0:row.offsetTop};try{g.setPointerCapture(e.pointerId)}catch(_){}row.classList.add('drag')});
+document.addEventListener('pointerdown',e=>{const g=e.target.closest&&e.target.closest('.grip');if(!g)return;const row=g.closest('.swr');if(!row)return;e.preventDefault();DR={row,list:row.parentElement,y0:e.clientY,t0:row.offsetTop};try{g.setPointerCapture(e.pointerId)}catch(_){}row.classList.add('drag')});
 document.addEventListener('pointermove',e=>{if(!DR)return;e.preventDefault();const{row,list}=DR,place=()=>{row.style.transform='translateY('+(e.clientY-DR.y0-(row.offsetTop-DR.t0))+'px)'};place();
 const r=row.getBoundingClientRect(),m=r.top+r.height/2,p=row.previousElementSibling,n=row.nextElementSibling;
 if(p&&m<p.getBoundingClientRect().top+p.offsetHeight/2){list.insertBefore(p,row.nextSibling);place()}
@@ -280,9 +314,12 @@ const gd=id=>(S.cfg.split||[]).find(x=>x.id===id);
 if(a==='dayset'){S.cfg.plan=e.target.value;const d=gd(e.target.value);if(d&&d.ex.length)sel=d.ex[0].n;save();render()}
 if(a==='dname'){const d=gd(e.target.dataset.id);d.name=clean(e.target.value)||d.name;sv();render()}
 if(a==='dtgt'){const d=gd(e.target.dataset.id);d.ex[+e.target.dataset.i].t=clean(e.target.value)||'3×10';sv();render()}});
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b||b.tagName==='SELECT')return;const a=b.dataset.a,v=b.dataset.v;
+document.addEventListener('click',async e=>{if(Date.now()-swiped<300)return;const b=e.target.closest('[data-a]');if(!b||b.tagName==='SELECT')return;const a=b.dataset.a,v=b.dataset.v;
 if(a==='tab'){tab=v;render()}
 else if(a==='noop'){}
+else if(a==='tgt'){const[id,i]=v.split(':'),d=(S.cfg.split||[]).find(x=>x.id===id);TE={id,i};seedT(i==='new'?(ATG[id]||'3×10'):d.ex[+i].t);render()}
+else if(a==='tclose'){TE=null;render()}
+else if(a==='tdone'){const t=fmtT(WV.tg);if(TE.i==='new')ATG[TE.id]=t;else{const d=S.cfg.split.find(x=>x.id===TE.id);d.ex[+TE.i].t=t;sv()}TE=null;render()}
 else if(a==='finish'){FW=buildFW();ED=null;tab='finish';scrollTo(0,0);render()}
 else if(a==='fcancel'){FW=null;ED=null;tab='train';scrollTo(0,0);render()}
 else if(a==='fdone'){if(commitFW()){FW=null;ED=null;tab='train';scrollTo(0,0)}render()}
@@ -305,20 +342,20 @@ else if(a==='manual'){tab='manual';mDate=iso();scrollTo(0,0);render()}
 else if(a==='msec'){mSec=v;render()}
 else if(a==='madd'){mEx=$('mx').value;const w=getW('m'),r=WV.m.r,n=Math.min(30,+$('mn').value||1);let x=S.sessions.find(q=>q.date===mDate);if(!x){x={id:uid(),date:mDate,sets:[],u:0};S.sessions.push(x)}for(let i=0;i<n;i++)x.sets.push({id:uid(),ex:mEx,w,r,pr:false});x.u=Date.now();save();toast(n+' set(s) added to '+mDate);render()}
 else if(a==='mdel'){const x=S.sessions.find(q=>q.date===mDate);x.sets=x.sets.filter(t=>t.id!==v);x.u=Date.now();if(!x.sets.length)S.sessions=S.sessions.filter(q=>q!==x);save();render()}
-else if(a==='mbody'){const k=+$('mk').value;if(!(k>0))return toast('Enter body weight');S.body=S.body.filter(q=>q.date!==mDate);S.body.push({id:uid(),date:mDate,kg:k});save();toast('Saved');render()}
+else if(a==='mbody'){const k=bwVal('mb');if(!(k>0))return toast('Enter body weight');S.body=S.body.filter(q=>q.date!==mDate);S.body.push({id:uid(),date:mDate,kg:k});save();toast('Saved');render()}
 else if(a==='mbdel'){S.body=S.body.filter(q=>q.id!==v);save();render()}
-else if(a==='mcard'){const m=+$('mm').value;if(!(m>0))return toast('Enter minutes');S.cardio.push({id:uid(),date:mDate,type:$('mt').value,min:m,km:+$('mkm').value||0});save();toast('Saved');render()}
+else if(a==='mcard'){const m=WV.mc.cm+1;S.cardio.push({id:uid(),date:mDate,type:$('mt').value,min:m,km:cardioKm('mc')});save();toast('Saved');render()}
 else if(a==='mcdel'){S.cardio=S.cardio.filter(q=>q.id!==v);save();render()}
 else if(a==='lest'){const wo=Math.round((+$('ey').value||0)*52*(+$('ew').value||0)*0.85);$('lw').value=wo;$('ls').value=wo*18;$('lv').value=wo*18*600;$('lp').value=Math.round(wo/25);$('lk').value=Math.min(30,Math.round(wo/20))}
 else if(a==='lsave'){S.cfg.base={workouts:+$('lw').value||0,sets:+$('ls').value||0,vol:+$('lv').value||0,prs:+$('lp').value||0,streak:+$('lk').value||0};sv();toast('History saved');tab='me';scrollTo(0,0);render()}
 else if(a==='addday'){S.cfg.split=S.cfg.split||[];const d={id:uid(),name:'Day '+(S.cfg.split.length+1),ex:[]};S.cfg.split.push(d);if(!S.cfg.plan)S.cfg.plan=d.id;sv();render()}
 else if(a==='tmpl'){S.cfg.split=S.cfg.split||[];Object.entries(PLAN).forEach(([n,l])=>S.cfg.split.push({id:uid(),name:n,ex:l.map(([x,y])=>({n:x,t:y}))}));if(!S.cfg.plan)S.cfg.plan=S.cfg.split[0].id;sv();render()}
 else if(a==='delday'){S.cfg.split=S.cfg.split.filter(d=>d.id!==v);if(S.cfg.plan===v)S.cfg.plan=S.cfg.split[0]?S.cfg.split[0].id:'';sv();render()}
-else if(a==='addex'){const d=S.cfg.split.find(x=>x.id===v);d.ex.push({n:$('ad-'+v).value,t:clean($('at-'+v).value)||'3×10'});sv();render()}
+else if(a==='addex'){const d=S.cfg.split.find(x=>x.id===v);d.ex.push({n:$('ad-'+v).value,t:ATG[v]||'3×10'});sv();render()}
 else if(a==='delex'){const[i,j]=v.split(':');S.cfg.split.find(x=>x.id===i).ex.splice(+j,1);sv();render()}
 else if(a==='newex'){const n=clean($('nx').value),g=$('ng').value;if(!n)return toast('Enter a name');if(GRP[n])return toast('That exercise already exists');EX[g].push(n);GRP[n]=g;S.cfg.custom=S.cfg.custom||{};S.cfg.custom[n]=g;save();toast('Added '+n);render()}
-else if(a==='cardio'){const m=+$('cm').value;if(!(m>0))return toast('Enter minutes');S.cardio.push({id:uid(),date:iso(),type:$('ct').value,min:m,km:+$('ck').value||0});save();toast('Cardio logged +'+m*2+' XP');render()}
-else if(a==='body'){const k=+$('bw').value;if(!(k>0))return toast('Enter body weight');S.body=S.body.filter(x=>x.date!==iso());S.body.push({id:uid(),date:iso(),kg:k});save();render()}
+else if(a==='cardio'){const m=WV.cc.cm+1;S.cardio.push({id:uid(),date:iso(),type:$('ct').value,min:m,km:cardioKm('cc')});save();toast('Cardio logged +'+m*2+' XP');render()}
+else if(a==='body'){const k=bwVal('bw');if(!(k>0))return toast('Enter body weight');S.body=S.body.filter(x=>x.date!==iso());S.body.push({id:uid(),date:iso(),kg:k});save();render()}
 else if(a==='saveid'){S.cfg.clientId=$('cid').value.trim();save();toast('Saved')}
 else if(a==='sync'){S.cfg.clientId=$('cid').value.trim();save();doSync(true)}
 else if(a==='exp'){const f=new File([JSON.stringify(S)],'iron-log-backup.json',{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[f]}))navigator.share({files:[f]}).catch(()=>{});else{const u=URL.createObjectURL(f),l=document.createElement('a');l.href=u;l.download=f.name;l.click()}}
